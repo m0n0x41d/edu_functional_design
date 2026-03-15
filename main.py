@@ -81,17 +81,35 @@ def read_move(board_state: BoardState) -> BoardState:
     if input_line == "q":
         raise SystemExit(0)
 
-    board = clone_board(board_state["board"])
     coords = input_line.split()
-    x = int(coords[1])
-    y = int(coords[0])
-    x1 = int(coords[3])
-    y1 = int(coords[2])
+    if len(coords) != 4:
+        print("Expected move format: row col row1 col1")
+        return board_state
+
+    try:
+        row = int(coords[0])
+        col = int(coords[1])
+        row1 = int(coords[2])
+        col1 = int(coords[3])
+    except ValueError:
+        print("Move coordinates must be integers.")
+        return board_state
+
+    size = board_state["board"]["size"]
+    if not all(0 <= value < size for value in (row, col, row1, col1)):
+        print("Move coordinates are out of bounds.")
+        return board_state
+
+    if abs(row - row1) + abs(col - col1) != 1:
+        print("Only adjacent cells can be swapped.")
+        return board_state
+
+    board = clone_board(board_state["board"])
 
     cells = [list(row) for row in board["cells"]]
-    element = cells[x][y]
-    cells[x][y] = cells[x1][y1]
-    cells[x1][y1] = element
+    element = cells[row][col]
+    cells[row][col] = cells[row1][col1]
+    cells[row1][col1] = element
 
     new_board = make_board(
         board["size"],
