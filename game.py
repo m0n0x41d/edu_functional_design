@@ -67,17 +67,19 @@ def make_board_state(board: Board, score: int = 0) -> BoardState:
     }
 
 
-def generate_random_cells(size: int = 8) -> BoardCells:
-    return tuple(
-        tuple(make_element(RNG.choice(SYMBOLS)) for _ in range(size))
-        for _ in range(size)
+def initialize_game(board_size: int = 8) -> BoardState:
+    if board_size < 3:
+        raise ValueError("Board size must be at least 3 to guarantee a possible move.")
+
+    empty_state = make_board_state(
+        make_board(board_size, make_empty_cells(board_size)),
+        0,
     )
+    initialized_state = process_cascade(fill_empty_spaces(empty_state))
+    if has_possible_moves(initialized_state["board"]):
+        return initialized_state
 
-
-def initialize_game(cells: BoardCells, score: int = 0) -> BoardState:
-    size = len(cells)
-    board = make_board(size, cells)
-    return make_board_state(board, score)
+    return initialize_game(board_size)
 
 
 def add_match_if_valid(
@@ -282,6 +284,49 @@ def clone_board(board: Board) -> Board:
     return make_board(size, cells)
 
 
+def swap_cells(board: Board, row: int, col: int, row1: int, col1: int) -> Board:
+    cells = [list(current_row) for current_row in board["cells"]]
+    element = cells[row][col]
+    cells[row][col] = cells[row1][col1]
+    cells[row1][col1] = element
+    return make_board(
+        board["size"],
+        tuple(tuple(current_row) for current_row in cells),
+    )
+
+
+def match_contains_cell(match: Match, row: int, col: int) -> bool:
+    if match["direction"] == "horizontal":
+        return (
+            match["row"] == row and match["col"] <= col < match["col"] + match["length"]
+        )
+
+    return match["col"] == col and match["row"] <= row < match["row"] + match["length"]
+
+
+def has_possible_moves(board: Board) -> bool:
+    size = board["size"]
+    if size < 3:
+        return False
+
+    for row in range(size):
+        for col in range(size):
+            for row1, col1 in ((row, col + 1), (row + 1, col)):
+                if row1 >= size or col1 >= size:
+                    continue
+
+                swapped_board = swap_cells(board, row, col, row1, col1)
+                matches = find_matches(swapped_board)
+                if any(
+                    match_contains_cell(match, row, col)
+                    or match_contains_cell(match, row1, col1)
+                    for match in matches
+                ):
+                    return True
+
+    return False
+
+
 def read_move(board_state: BoardState) -> BoardState:
     print(">")
     input_line = input()
@@ -311,24 +356,12 @@ def read_move(board_state: BoardState) -> BoardState:
         print("Only adjacent cells can be swapped.")
         return board_state
 
-    board = clone_board(board_state["board"])
-
-    cells = [list(row) for row in board["cells"]]
-    element = cells[row][col]
-    cells[row][col] = cells[row1][col1]
-    cells[row1][col1] = element
-
-    new_board = make_board(
-        board["size"],
-        tuple(tuple(row) for row in cells),
-    )
+    new_board = swap_cells(board_state["board"], row, col, row1, col1)
     return process_cascade(make_board_state(new_board, board_state["score"]))
 
 
 def main() -> None:
-    # until save/load is not implemented.
-    random_cells = generate_random_cells()
-    board_state = initialize_game(cells=random_cells, score=0)
+    board_state = initialize_game()
     while True:
         draw(board_state["board"])
         board_state = read_move(board_state)
