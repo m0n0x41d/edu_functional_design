@@ -252,14 +252,11 @@ def fill_empty_spaces(current_state: BoardState) -> BoardState:
     return make_board_state(new_board, current_state["score"])
 
 
-def process_cascade(current_state: BoardState) -> BoardState:
-    matches = find_matches(current_state["board"])
-    if not matches:
-        return current_state
-
-    next_state = remove_matches(current_state, matches)
-    next_state = fill_empty_spaces(next_state)
-    return process_cascade(next_state)
+def process_cascade(state: BoardState) -> BoardState:
+    while matches := find_matches(state["board"]):
+        state = remove_matches(state, matches)
+        state = fill_empty_spaces(state)
+    return state
 
 
 def draw(board: Board) -> None:
