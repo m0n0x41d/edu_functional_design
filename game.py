@@ -71,11 +71,11 @@ def initialize_game(board_size: int = 8) -> BoardState:
     if board_size < 3:
         raise ValueError("Board size must be at least 3 to guarantee a possible move.")
 
-    empty_state = make_board_state(
-        make_board(board_size, make_empty_cells(board_size)),
-        0,
-    )
-    initialized_state = process_cascade(fill_empty_spaces(empty_state))
+    empty_cells = make_empty_cells(board_size)
+    empty_board = make_board(board_size, empty_cells)
+    empty_state = make_board_state(empty_board, 0)
+    filled_state = fill_empty_spaces(empty_state)
+    initialized_state = process_cascade(filled_state)
     if has_possible_moves(initialized_state["board"]):
         return initialized_state
 
@@ -228,15 +228,14 @@ def remove_matches(
     if not matches:
         return current_state
 
+    size = current_state["board"]["size"]
     marked_cells = mark_cells_for_removal(current_state["board"], matches)
-    gravity_applied_cells = apply_gravity(marked_cells, current_state["board"]["size"])
+    gravity_applied_cells = apply_gravity(marked_cells, size)
     removed_count = sum(match["length"] for match in matches)
     new_score = current_state["score"] + calculate_score(removed_count)
+    new_board = make_board(size, gravity_applied_cells)
 
-    return make_board_state(
-        make_board(current_state["board"]["size"], gravity_applied_cells),
-        new_score,
-    )
+    return make_board_state(new_board, new_score)
 
 
 def fill_empty_spaces(current_state: BoardState) -> BoardState:
@@ -249,10 +248,8 @@ def fill_empty_spaces(current_state: BoardState) -> BoardState:
         for row in current_state["board"]["cells"]
     )
 
-    return make_board_state(
-        make_board(size, new_cells),
-        current_state["score"],
-    )
+    new_board = make_board(size, new_cells)
+    return make_board_state(new_board, current_state["score"])
 
 
 def process_cascade(current_state: BoardState) -> BoardState:
@@ -289,10 +286,8 @@ def swap_cells(board: Board, row: int, col: int, row1: int, col1: int) -> Board:
     element = cells[row][col]
     cells[row][col] = cells[row1][col1]
     cells[row1][col1] = element
-    return make_board(
-        board["size"],
-        tuple(tuple(current_row) for current_row in cells),
-    )
+    new_cells = tuple(tuple(current_row) for current_row in cells)
+    return make_board(board["size"], new_cells)
 
 
 def match_contains_cell(match: Match, row: int, col: int) -> bool:
@@ -357,7 +352,8 @@ def read_move(board_state: BoardState) -> BoardState:
         return board_state
 
     new_board = swap_cells(board_state["board"], row, col, row1, col1)
-    return process_cascade(make_board_state(new_board, board_state["score"]))
+    new_state = make_board_state(new_board, board_state["score"])
+    return process_cascade(new_state)
 
 
 def main() -> None:
