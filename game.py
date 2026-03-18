@@ -80,15 +80,16 @@ def initialize_game(board_size: int = 8) -> BoardState:
         raise ValueError("Board size must be at least 3 to guarantee a possible move.")
 
     initialized_state = pipe(
-        # make board cells
+        # prepare BoardCells
         make_empty_cells(board_size),
-        # and board.
+        # and then Board.
         partial(make_board, board_size),
-        # Now prepare BoardState.
+        # Now finilize BoardState.
         partial(make_board_state, score=0),
         fill_empty_spaces,
         process_cascade,
     )
+
     if has_possible_moves(initialized_state["board"]):
         return initialized_state
 
