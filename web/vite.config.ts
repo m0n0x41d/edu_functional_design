@@ -2,7 +2,7 @@ import { defineConfig } from "vite"
 
 export default defineConfig({
     root: ".",
-    base: "/edu_functional_design/",
+    base: "./",
     server: {
         fs: { allow: [".."] },
     },
