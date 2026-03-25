@@ -1,5 +1,5 @@
 import type { Pos } from "./types"
-import { bridgeInitGame, bridgeTryMove } from "./bridge"
+import { initGame, tryMove } from "./api"
 import {
     createUI,
     getBoardElement,
@@ -52,7 +52,7 @@ async function handleCellClick(row: number, col: number): Promise<void> {
     state = "animating"
     deselectAll()
 
-    const result = bridgeTryMove(
+    const result = tryMove(
         selectedPos![0], selectedPos![1],
         clicked[0], clicked[1],
     )
@@ -81,7 +81,7 @@ async function handleCellClick(row: number, col: number): Promise<void> {
 
 export function startGame(): void {
     const container = document.getElementById("app")!
-    const gameState = bridgeInitGame(BOARD_SIZE)
+    const gameState = initGame(BOARD_SIZE)
 
     createUI(container, BOARD_SIZE)
     renderBoard(gameState.board)
